@@ -87,13 +87,15 @@
 /* Visuals */
 
 #tab-strip-outer {
-  background: linear-gradient(#DDD, #AAA);
   --tab-background: #F2F2F2;
   --tab-border-color: #AAA;
+  background: linear-gradient(#DDD, #AAA 35px, var(--tab-background) 0);
+  padding-bottom: 100px;
 }
 
 #tab-strip {  
   padding: 5px 10px 0;
+  background: linear-gradient(to top, hsl(0,0%,70%) 1px, hsl(0,0%,40%) 0, transparent 4px);
 }
 
 .tab-outer {
@@ -126,12 +128,11 @@
 /* With lightweight theme */
 
 #tab-strip-outer.persona {
-  background: url(Hawaii-Turtle-1920x1200.jpg) center right no-repeat;
-  --tab-background: linear-gradient(hsl(0,0%,100%), hsl(0,0%,50%));
+  background: linear-gradient(-45deg, yellow, green, blue) center right no-repeat;
+  --tab-background: linear-gradient(hsl(0,0%,90%), 25%, hsl(0,0%,50%));
 }
 
 #tab-strip-outer.persona > #tab-strip {
-  background: linear-gradient(to top, hsl(0,0%,90%) 1px, hsl(0,0%,10%) 0, hsl(0,0%,10%) 2px, transparent 0);
   mix-blend-mode: hard-light;
 }
 
@@ -184,7 +185,7 @@ function makeTab(label) {
 
 tabStrip.appendChild(makeTab('Hello World'));
 tabStrip.appendChild(makeTab('This is a tab'));
-tabStrip.appendChild(makeTab('This is a tab with a tab title that is clearly too long'));
+tabStrip.appendChild(makeTab('This is another tab'));
 
 </script>
 
