@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Tab Strip</title>
+
+<style>
+
+#templates
+{
+  display:  none;
+}
+
+/* Functionality */
+
+#tab-strip-outer {
+
+}
+
+#tab-strip {
+  display: flex;
+  height: 30px;
+  --height: 30px;
+  flex-flow: row nowrap;
+}
+
+.tab-outer {
+  width: 200px;
+}
+
+.tab-outer * {
+  will-change: transform;
+}
+
+.tab-background {
+  display: flex;
+  flex-flow: row nowrap;
+  height: var(--height);
+  box-sizing: border-box;
+  margin-bottom: calc(-1 * var(--height));
+}
+
+.tab-background-start {
+  width: 4px;
+}
+
+.tab-background-mid-and-end-clip {
+  flex: 1;
+  display: flex;
+  flex-flow: row nowrap;
+  overflow: hidden;
+}
+
+.tab-background-mid-and-end {
+  will-change: transform;
+  transition: transform ease-in-out 200ms;
+  flex: 1;
+}
+
+.tab-text-clip {
+  background: linear-gradient(transparent, transparent);
+  margin-right: -15px;
+  mask: linear-gradient(to left, transparent, black 15px);
+}
+
+.tab-text-clip,
+.tab-text-clip-inner {
+  transform: translateX(0);
+  transition: transform ease-in-out 200ms;
+}
+
+.tab-text {
+  white-space: nowrap;
+}
+
+.tab-outer:hover .tab-background-mid-and-end {
+  transform: translateX(-130px);
+}
+
+.tab-outer:hover .tab-text-clip {
+  transform: translateX(-145px);
+}
+
+.tab-outer:hover .tab-text-clip-inner {
+  transform: translateX(145px);
+}
+
+/* Visuals */
+
+#tab-strip-outer {
+  background: linear-gradient(#DDD, #AAA);
+  --tab-background: #F2F2F2;
+  --tab-border-color: #AAA;
+}
+
+#tab-strip {  
+  padding: 5px 10px 0;
+}
+
+.tab-outer {
+  margin: 0 -0.5px;
+}
+
+.tab-background-start {
+  width: 4px;
+  background: var(--tab-background);
+  border-left: 1px solid var(--tab-border-color);
+  border-top: 1px solid var(--tab-border-color);
+}
+
+.tab-background-mid-and-end {
+  background: var(--tab-background);
+  border-right: 1px solid var(--tab-border-color);
+  border-top: 1px solid var(--tab-border-color);
+}
+
+.tab-foreground {
+  padding: 2px 4px 0;
+}
+
+.tab-text {
+  font: message-box;
+  font-size: 12px;
+  line-height: 25px;
+}
+
+/* With lightweight theme */
+
+#tab-strip-outer.persona {
+  background: url(Hawaii-Turtle-1920x1200.jpg) center right no-repeat;
+  --tab-background: linear-gradient(hsl(0,0%,100%), hsl(0,0%,50%));
+}
+
+#tab-strip-outer.persona > #tab-strip {
+  background: linear-gradient(to top, hsl(0,0%,90%) 1px, hsl(0,0%,10%) 0, hsl(0,0%,10%) 2px, transparent 0);
+  mix-blend-mode: hard-light;
+}
+
+#tab-strip-outer.persona .tab-outer {
+}
+
+</style>
+
+<div id="templates">
+  <div class="tab-outer" id="tab-template">
+    <div class="tab-background">
+      <div class="tab-background-start"></div>
+      <div class="tab-background-mid-and-end-clip">
+        <div class="tab-background-mid-and-end"></div>
+      </div>
+    </div>
+    <div class="tab-foreground">
+      <div class="tab-start-icon">
+        <div class="tab-connecting-throbber"></div>
+        <div class="tab-loading-throbber"></div>
+        <div class="tab-favicon"></div>
+      </div>
+      <div class="tab-text-clip">
+        <div class="tab-text-clip-inner">
+          <div class="tab-text">Here is the tab title</div>
+        </div>
+      </div>
+      <div class="tab-close-button"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-strip-outer">
+  <div id="tab-strip">
+
+  </div>
+</div>
+
+<script>
+
+const tabStrip = document.querySelector('#tab-strip');
+const tabTemplate = document.querySelector('#tab-template');
+
+function makeTab(label) {
+  const tab = tabTemplate.cloneNode(true);
+  tab.id = null;
+  tab.querySelector('.tab-text').textContent = label;
+  return tab;
+}
+
+tabStrip.appendChild(makeTab('Hello World'));
+tabStrip.appendChild(makeTab('This is a tab'));
+tabStrip.appendChild(makeTab('This is a tab with a tab title that is clearly too long'));
+
+</script>
+
+<h1>Background story</h1>
+
+<p><strong>This is a work in progress. I intend to flesh this out over the next few days.</strong></p>
+
+<p>
+Current tab strip has a bunch of problems:
+</p>
+<ul>
+ <li>Animations require reflows and have to run on the main thread</li>
+ <li>Any main thread jank interrupts these animations.</li>
+ <li>Many discrete changes that we can't smoothly animate over:
+   <ul>
+    <li>Most important one is the appearance of the scroll arrows: Scroll buttons appear and reduce the available width for tabs, the new tab button moves to the right, everything shifts</li>
+    <li>If tab width goes below a certain threshold, background tabs lose their tab close button and the tab label shifts</li>
+    </ul>
+    </li>
+ <li>Tab strip performance depends on the number of tabs, e.g. reflows get slower see bug (XXX find bug with slow reflows when closing the first tab)</li>
+</ul>
+
+<p>What if the following was possible:</p>
+<ul>
+ <li>We had "component" in charge of rendering the tab strip, and it had full control over all pieces that make up the tab strip</li>
+ <li>For every tab strip state change, it could determine all required changes upfront and then create animations that smoothly get us from the current state to the new state</li>
+ <li>All these animations can run on the compositor, protecting them from main thread jank</li>
+ <li>No compromises were necessery in terms of tab appearance</li>
+</ul>
+<p>Here's my proposed plan:</p>
+<ul>
+ <li>Create a "tab strip renderer" that renders the tab bar as a bunch of HTML elements with transforms on them</li>
+ <li>Implement scrolling using transforms, too</li>
+ <li>Only render visible tabs, don't create DOM elements for tabs that won't be shown during the current animation.</li>
+</ul>
+<p>Interlude: Why scrolling using transforms and not using APZ?</p>
+<ul>
+ <li>Basically, because APZ doesn't have any benefits in the parent process.</li>
+ <li>[...] to be continued</li>
+</ul>
+
+
